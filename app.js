@@ -9,6 +9,7 @@ function init() {
     loadHistory();
     loadZoomLevel();
     loadDarkMode();
+    loadAIScores(); // Load AI scores from aiScoring.js
     renderCandidateList();
     updateStats();
     setupKeyboardShortcuts();
@@ -183,6 +184,7 @@ function renderCandidateList() {
     
     mockCandidates.forEach(candidate => {
         const status = getStatus(candidate.id);
+        const score = getAIScore(candidate.id); // Use getAIScore from aiScoring.js
         const item = document.createElement('div');
         item.className = `candidate-item ${currentCandidateId === candidate.id ? 'active' : ''}`;
         item.onclick = () => selectCandidate(candidate.id);
@@ -190,7 +192,7 @@ function renderCandidateList() {
         item.innerHTML = `
             <div class="candidate-item-header">
                 <div class="candidate-item-name">${candidate.firstName} ${candidate.lastName}</div>
-                <div class="ai-score-badge">${candidate.aiScore}</div>
+                <div class="ai-score-badge">${score}</div>
             </div>
             <div class="candidate-item-footer">
                 <div class="candidate-item-project">${candidate.company}</div>
