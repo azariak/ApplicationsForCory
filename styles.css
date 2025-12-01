@@ -433,18 +433,18 @@ kbd {
 /* Scrollbar styling */
 .candidate-list::-webkit-scrollbar,
 .candidate-details::-webkit-scrollbar {
-    width: 8px;
+    width: 4px;
 }
 
 .candidate-list::-webkit-scrollbar-track,
 .candidate-details::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: transparent;
 }
 
 .candidate-list::-webkit-scrollbar-thumb,
 .candidate-details::-webkit-scrollbar-thumb {
     background: #ccc;
-    border-radius: 4px;
+    border-radius: 2px;
 }
 
 .candidate-list::-webkit-scrollbar-thumb:hover,
