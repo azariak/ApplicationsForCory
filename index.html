@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z Fellows - Application Review</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Z Fellows</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">To Review:</span>
+                        <span id="pending-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Interview:</span>
+                        <span id="interview-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Done:</span>
+                        <span id="done-count" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="candidate-list-header">
+                <span class="list-header-label">Candidates</span>
+                <span class="list-header-label">AI Score</span>
+            </div>
+            <div class="candidate-list" id="candidate-list">
+                <!-- Candidates will be populated here -->
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <div class="header-top">
+                    <div class="candidate-name-header">
+                        <h1 id="candidate-name">Select a candidate</h1>
+                        <div class="status-badge" id="status-badge"></div>
+                    </div>
+                <div class="keyboard-shortcuts">
+                    <span class="shortcut"><kbd>P</kbd> Pending</span>
+                    <span class="shortcut"><kbd>I</kbd> Interview</span>
+                    <span class="shortcut"><kbd>E</kbd> Done</span>
+                    <span class="shortcut"><kbd>Z</kbd> Undo</span>
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" id="zoom-out" title="Decrease text size">A-</button>
+                        <button class="zoom-btn" id="zoom-in" title="Increase text size">A+</button>
+                        <button class="dark-mode-btn" id="dark-mode-toggle" title="Toggle dark mode">🌙</button>
+                    </div>
+                </div>
+                </div>
+                <div class="header-info" id="header-info">
+                    <!-- Header info will be populated here -->
+                </div>
+            </div>
+
+            <div class="candidate-details" id="candidate-details">
+                <p class="empty-state">Select a candidate from the sidebar to view their application</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="mockData.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
