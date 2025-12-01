@@ -15,6 +15,7 @@
     --hover-bg: #f8f8f8;
     --active-bg: #f0f7ff;
     --active-border: #2196F3;
+    --sidebar-width: 320px;
 }
 
 body.dark-mode {
@@ -57,12 +58,78 @@ body {
 
 /* Sidebar */
 .sidebar {
-    width: 320px;
+    width: var(--sidebar-width);
+    min-width: 200px;
+    max-width: 600px;
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+/* Resize Handle */
+.resize-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+
+.resize-handle:hover {
+    background: var(--active-border);
+}
+
+.resize-handle.resizing {
+    background: var(--active-border);
+}
+
+.container.resizing {
+    user-select: none;
+    cursor: col-resize;
+}
+
+.resize-reset-btn {
+    position: absolute;
+    bottom: 20px;
+    width: 20px;
+    height: 20px;
+    background: var(--button-bg);
+    border: 1px solid var(--button-border);
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.resize-handle:hover .resize-reset-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.resize-reset-btn:hover {
+    background: var(--button-hover-bg);
+    border-color: var(--button-hover-border);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.resize-reset-btn:active {
+    transform: scale(0.95);
 }
 
 .sidebar-header {

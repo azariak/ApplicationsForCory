@@ -10,9 +10,11 @@ function init() {
     loadZoomLevel();
     loadDarkMode();
     loadAIScores();
+    loadSidebarWidth();
     renderCandidateList();
     updateStats();
     setupKeyboardShortcuts();
+    setupResizeHandle();
     document.getElementById('zoom-in').addEventListener('click', () => changeZoom(1));
     document.getElementById('zoom-out').addEventListener('click', () => changeZoom(-1));
     document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
@@ -222,6 +224,69 @@ function moveToNextCandidate() {
         if (getStatus(mockCandidates[i].id) === 'pending') return selectCandidate(mockCandidates[i].id);
     }
     if (currentIndex < mockCandidates.length - 1) selectCandidate(mockCandidates[currentIndex + 1].id);
+}
+
+function loadSidebarWidth() {
+    const saved = localStorage.getItem('zfellows-sidebar-width');
+    if (saved) {
+        const width = parseInt(saved);
+        document.documentElement.style.setProperty('--sidebar-width', `${width}px`);
+    }
+}
+
+function setupResizeHandle() {
+    const resizeHandle = document.getElementById('resize-handle');
+    const resetBtn = document.getElementById('resize-reset-btn');
+    const sidebar = document.getElementById('sidebar');
+    const container = document.querySelector('.container');
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    // Reset button click handler
+    resetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.documentElement.style.setProperty('--sidebar-width', '320px');
+        localStorage.setItem('zfellows-sidebar-width', '320');
+    });
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+        // Don't start resizing if clicking the reset button
+        if (e.target === resetBtn) return;
+        
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = sidebar.offsetWidth;
+        resizeHandle.classList.add('resizing');
+        container.classList.add('resizing');
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const delta = e.clientX - startX;
+        const newWidth = startWidth + delta;
+        
+        // Apply min/max constraints
+        const minWidth = 200;
+        const maxWidth = 600;
+        const constrainedWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        
+        document.documentElement.style.setProperty('--sidebar-width', `${constrainedWidth}px`);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            resizeHandle.classList.remove('resizing');
+            container.classList.remove('resizing');
+            
+            // Save the new width
+            const currentWidth = sidebar.offsetWidth;
+            localStorage.setItem('zfellows-sidebar-width', currentWidth.toString());
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
