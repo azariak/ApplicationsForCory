@@ -1,6 +1,6 @@
 # Z Fellows Application Review Dashboard
 
-A streamlined dashboard for reviewing Z Fellows applications with Airtable integration.
+A streamlined dashboard for Cory Levy to review Z Fellows applications with Airtable integration.
 
 
 ## TODO
