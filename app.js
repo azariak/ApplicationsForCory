@@ -3,28 +3,144 @@ let candidateStatuses = {};
 let statusHistory = [];
 let redoHistory = [];
 let zoomLevel = 0;
+let candidates = []; // Will be populated from API
+let nextOffset = null; // For pagination
+let hasMoreCandidates = false;
+let isLoadingMore = false;
 const fontSizes = [10, 11, 13, 15, 17];
 
-function init() {
-    loadStatuses();
-    loadHistory();
+async function init() {
     loadZoomLevel();
     loadDarkMode();
-    loadAIScores();
     loadSidebarWidth();
-    renderCandidateList();
-    updateStats();
     setupKeyboardShortcuts();
     setupResizeHandle();
     document.getElementById('zoom-in').addEventListener('click', () => changeZoom(1));
     document.getElementById('zoom-out').addEventListener('click', () => changeZoom(-1));
     document.getElementById('dark-mode-toggle').addEventListener('click', toggleDarkMode);
-    if (mockCandidates.length > 0) selectCandidate(mockCandidates[0].id);
+    
+    // Show loading state
+    showLoadingState();
+    
+    // Load candidates from API
+    try {
+        await loadCandidatesFromAPI();
+    } catch (error) {
+        console.error('Failed to load candidates:', error);
+        showErrorState(error.message);
+    }
+}
+
+function showLoadingState() {
+    const listElement = document.getElementById('candidate-list');
+    listElement.innerHTML = '<div class="loading-state">Loading candidates from Airtable...</div>';
+    document.getElementById('candidate-details').innerHTML = '<p class="empty-state">Loading candidates...</p>';
+}
+
+function showErrorState(message) {
+    const listElement = document.getElementById('candidate-list');
+    listElement.innerHTML = `
+        <div class="error-state">
+            <p>Failed to load candidates</p>
+            <small>${message}</small>
+            <button onclick="retryLoad()" class="retry-btn">Retry</button>
+        </div>
+    `;
+    document.getElementById('candidate-details').innerHTML = `
+        <div class="error-state">
+            <h3>Configuration Required</h3>
+            <p>Please ensure your <code>.env</code> file contains:</p>
+            <ul>
+                <li><code>AIRTABLE</code> - Your Airtable personal access token</li>
+                <li><code>AIRTABLE_BASE_ID</code> - Your Airtable base ID</li>
+                <li><code>AIRTABLE_TABLE_NAME</code> - Your table name (e.g., "Applications")</li>
+            </ul>
+            <p>Then restart the server with <code>npm start</code></p>
+        </div>
+    `;
+}
+
+async function retryLoad() {
+    showLoadingState();
+    try {
+        await loadCandidatesFromAPI();
+    } catch (error) {
+        console.error('Failed to load candidates:', error);
+        showErrorState(error.message);
+    }
+}
+
+async function loadCandidatesFromAPI(offset = null) {
+    const url = offset ? `/api/candidates?offset=${encodeURIComponent(offset)}` : '/api/candidates';
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    if (!data.success) {
+        throw new Error(data.message || data.error || 'Unknown error');
+    }
+    
+    if (offset) {
+        // Appending more candidates
+        candidates = [...candidates, ...data.candidates];
+    } else {
+        // Initial load
+        candidates = data.candidates;
+    }
+    
+    nextOffset = data.offset;
+    hasMoreCandidates = data.hasMore;
+    
+    console.log(`Loaded ${data.candidates.length} candidates from Airtable (total: ${candidates.length}, hasMore: ${hasMoreCandidates})`);
+    
+    // Now initialize the rest of the app
+    loadStatuses();
+    loadHistory();
+    loadAIScores();
+    renderCandidateList();
+    updateStats();
+    
+    if (candidates.length > 0 && !currentCandidateId) {
+        selectCandidate(candidates[0].id);
+    } else if (candidates.length === 0) {
+        document.getElementById('candidate-details').innerHTML = '<p class="empty-state">No candidates found in Airtable</p>';
+    }
+}
+
+async function loadMoreCandidates() {
+    if (isLoadingMore || !hasMoreCandidates || !nextOffset) return;
+    
+    isLoadingMore = true;
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = '<span class="loading-spinner"></span> Loading...';
+    }
+    
+    try {
+        await loadCandidatesFromAPI(nextOffset);
+    } catch (error) {
+        console.error('Failed to load more candidates:', error);
+        if (loadMoreBtn) {
+            loadMoreBtn.innerHTML = 'Error loading - Click to retry';
+            loadMoreBtn.disabled = false;
+        }
+    } finally {
+        isLoadingMore = false;
+    }
 }
 
 function loadStatuses() {
     const saved = localStorage.getItem('zfellows-statuses');
-    candidateStatuses = saved ? JSON.parse(saved) : mockCandidates.reduce((acc, c) => ({...acc, [c.id]: 'pending'}), {});
+    if (saved) {
+        const savedStatuses = JSON.parse(saved);
+        // Merge saved statuses with defaults for new candidates
+        candidateStatuses = candidates.reduce((acc, c) => ({
+            ...acc, 
+            [c.id]: savedStatuses[c.id] || 'pending'
+        }), {});
+    } else {
+        candidateStatuses = candidates.reduce((acc, c) => ({...acc, [c.id]: 'pending'}), {});
+    }
 }
 
 function saveStatuses() {
@@ -130,7 +246,8 @@ function updateDarkModeButton() {
 function renderCandidateList() {
     const listElement = document.getElementById('candidate-list');
     listElement.innerHTML = '';
-    [...mockCandidates].sort((a, b) => getAIScore(b.id) - getAIScore(a.id)).forEach(candidate => {
+    
+    [...candidates].sort((a, b) => getAIScore(b.id) - getAIScore(a.id)).forEach(candidate => {
         const status = getStatus(candidate.id);
         const score = getAIScore(candidate.id);
         const item = document.createElement('div');
@@ -148,6 +265,18 @@ function renderCandidateList() {
         `;
         listElement.appendChild(item);
     });
+    
+    // Add "Load More" button if there are more candidates
+    if (hasMoreCandidates) {
+        const loadMoreContainer = document.createElement('div');
+        loadMoreContainer.className = 'load-more-container';
+        loadMoreContainer.innerHTML = `
+            <button id="load-more-btn" class="load-more-btn" onclick="loadMoreCandidates()">
+                Load More Candidates
+            </button>
+        `;
+        listElement.appendChild(loadMoreContainer);
+    }
 }
 
 function updateStats() {
@@ -160,7 +289,7 @@ function updateStats() {
 
 function selectCandidate(candidateId) {
     currentCandidateId = candidateId;
-    const candidate = mockCandidates.find(c => c.id === candidateId);
+    const candidate = candidates.find(c => c.id === candidateId);
     if (!candidate) return;
     document.getElementById('candidate-name').textContent = `${candidate.firstName} ${candidate.lastName}`;
     updateStatusBadge(getStatus(candidateId));
@@ -187,8 +316,18 @@ function updateStatusBadge(status) {
 }
 
 function renderCandidateDetails(c) {
+    // Build Cory interview scores if any exist
+    const coryScores = [];
+    if (c.coryOverallScore) coryScores.push(`Overall: ${c.coryOverallScore}`);
+    if (c.coryEnergy) coryScores.push(`Energy: ${c.coryEnergy}`);
+    if (c.corySmart) coryScores.push(`Smart: ${c.corySmart}`);
+    if (c.coryStorytelling) coryScores.push(`Storytelling: ${c.coryStorytelling}`);
+    
     const sections = [
         ['Company / Project', c.company],
+        ['Decision', c.decision],
+        ...(coryScores.length ? [['Cory Interview Scores', coryScores.join(' | ')]] : []),
+        ...(c.coryNotes ? [['Cory Notes', c.coryNotes]] : []),
         ['School or Work', c.schoolOrWork],
         ['Project Description', c.projectDescription],
         ['Problem Solving', c.problemSolving],
@@ -199,17 +338,21 @@ function renderCandidateDetails(c) {
         ['What Drives You', c.drives],
         ['Non-Traditional Background', c.nonTraditional],
         ['Risk or Challenge', c.riskOrChallenge],
-        ['Website / Links', c.website.split(',').map(link => `<a href="${link.trim()}" target="_blank">${link.trim()}</a>`).join('<br>')],
+        ['Website / Links', c.website ? c.website.split(',').map(link => `<a href="${link.trim()}" target="_blank">${link.trim()}</a>`).join('<br>') : ''],
         ['Achievements', c.achievements],
         ...(c.videoLink ? [['Video Introduction', `<a href="${c.videoLink}" target="_blank">${c.videoLink}</a>`]] : []),
+        ...(c.pitchVideo ? [['Pitch Video', `<a href="${c.pitchVideo}" target="_blank">${c.pitchVideo}</a>`]] : []),
         ['Dream Co-founder', c.cofounder],
         ['How They Heard About Z Fellows', c.howHeard],
         ...(c.helpNeeded ? [['Help Needed', c.helpNeeded]] : [])
     ];
     
+    // Filter out empty sections
+    const filteredSections = sections.filter(([title, content]) => content && content.trim());
+    
     document.getElementById('candidate-details').innerHTML = `
         <div class="details-grid">
-            ${sections.map(([title, content]) => `
+            ${filteredSections.map(([title, content]) => `
                 <div class="detail-section">
                     <h3>${title}</h3>
                     <p>${content}</p>
@@ -240,14 +383,14 @@ function setupKeyboardShortcuts() {
 }
 
 function moveToNextCandidate() {
-    const currentIndex = mockCandidates.findIndex(c => c.id === currentCandidateId);
-    for (let i = currentIndex + 1; i < mockCandidates.length; i++) {
-        if (getStatus(mockCandidates[i].id) === 'pending') return selectCandidate(mockCandidates[i].id);
+    const currentIndex = candidates.findIndex(c => c.id === currentCandidateId);
+    for (let i = currentIndex + 1; i < candidates.length; i++) {
+        if (getStatus(candidates[i].id) === 'pending') return selectCandidate(candidates[i].id);
     }
     for (let i = 0; i < currentIndex; i++) {
-        if (getStatus(mockCandidates[i].id) === 'pending') return selectCandidate(mockCandidates[i].id);
+        if (getStatus(candidates[i].id) === 'pending') return selectCandidate(candidates[i].id);
     }
-    if (currentIndex < mockCandidates.length - 1) selectCandidate(mockCandidates[currentIndex + 1].id);
+    if (currentIndex < candidates.length - 1) selectCandidate(candidates[currentIndex + 1].id);
 }
 
 function loadSidebarWidth() {
@@ -311,6 +454,11 @@ function setupResizeHandle() {
             localStorage.setItem('zfellows-sidebar-width', currentWidth.toString());
         }
     });
+}
+
+// Expose candidates globally for aiScoring.js
+function getCandidates() {
+    return candidates;
 }
 
 if (document.readyState === 'loading') {

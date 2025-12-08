@@ -11,8 +11,10 @@ function saveAIScores() {
 
 function getAIScore(candidateId) {
     if (aiScores[candidateId] !== undefined) return aiScores[candidateId];
-    const candidate = mockCandidates.find(c => c.id === candidateId);
-    return candidate ? candidate.aiScore : 0;
+    // Get candidates from the global getCandidates function or use default
+    const candidateList = typeof getCandidates === 'function' ? getCandidates() : (typeof candidates !== 'undefined' ? candidates : []);
+    const candidate = candidateList.find(c => c.id === candidateId);
+    return candidate ? (candidate.aiScore || 50) : 50;
 }
 
 async function scoreCandidate(candidate, apiKey, model = 'gpt-4o-mini') {
@@ -52,7 +54,8 @@ Return ONLY a number 0-100.`;
 }
 
 async function scoreAllPendingCandidates(apiKey, onProgress = null) {
-    const pending = mockCandidates.filter(c => getStatus(c.id) === 'pending' && !aiScores[c.id]);
+    const candidateList = typeof getCandidates === 'function' ? getCandidates() : (typeof candidates !== 'undefined' ? candidates : []);
+    const pending = candidateList.filter(c => getStatus(c.id) === 'pending' && !aiScores[c.id]);
     if (!pending.length) return { success: true, message: 'No pending candidates', total: 0, successful: 0, failed: 0 };
     
     const results = { total: pending.length, successful: 0, failed: 0, errors: [] };
@@ -102,4 +105,3 @@ function resetAIScores() {
 window.runAIScoring = runAIScoring;
 window.resetAIScores = resetAIScores;
 window.getAIScore = getAIScore;
-
