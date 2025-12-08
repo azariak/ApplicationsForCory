@@ -2,6 +2,14 @@
 
 A streamlined dashboard for reviewing Z Fellows applications with Airtable integration.
 
+
+## TODO
+- Youtube embed
+- AI Score + option for chronological
+- All fields there
+- Settings for .env
+- Send data to airtable
+
 ## Setup
 
 ### 1. Install Dependencies
@@ -85,7 +93,7 @@ If your Airtable uses different field names, edit `airtableService.js` and updat
 
 | Key | Action |
 |-----|--------|
-| `P` | Mark as Pending |
+| `P` | Stage 1: Review |
 | `I` | Mark for Interview |
 | `E` | Mark as Done |
 | `Z` | Undo last action |

@@ -267,7 +267,7 @@ body {
     flex-shrink: 0;
 }
 
-.candidate-item-status.pending {
+.candidate-item-status.stage-review {
     background: #fff3cd;
     color: #856404;
 }
@@ -280,6 +280,47 @@ body {
 .candidate-item-status.done {
     background: #d4edda;
     color: #155724;
+}
+
+/* Stage-based status colors */
+.candidate-item-status.stage-none {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.candidate-item-status.stage-review {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.candidate-item-status.stage-interview {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.candidate-item-status.stage-accepted {
+    background: #d4edda;
+    color: #155724;
+}
+
+.candidate-item-status.stage-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.candidate-item-status.stage-waitlist {
+    background: #e2d5f1;
+    color: #563d7c;
+}
+
+.candidate-item-status.stage-stage3 {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.candidate-item-status.stage-default {
+    background: #e9ecef;
+    color: #495057;
 }
 
 /* Main Content */
@@ -344,19 +385,42 @@ body {
     text-transform: uppercase;
 }
 
-.status-badge.pending {
+.status-badge.stage-review {
     background: #fff3cd;
     color: #856404;
 }
 
-.status-badge.interview {
+.status-badge.interview,
+.status-badge.stage-interview {
     background: #d1ecf1;
     color: #0c5460;
 }
 
-.status-badge.done {
+.status-badge.done,
+.status-badge.stage-accepted {
     background: #d4edda;
     color: #155724;
+}
+
+.status-badge.stage-rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-badge.stage-waitlist {
+    background: #e2d5f1;
+    color: #563d7c;
+}
+
+.status-badge.stage-stage3 {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-badge.stage-none,
+.status-badge.stage-default {
+    background: #e9ecef;
+    color: #495057;
 }
 
 .keyboard-shortcuts {

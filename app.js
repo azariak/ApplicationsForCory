@@ -129,17 +129,33 @@ async function loadMoreCandidates() {
     }
 }
 
+function normalizeStage(stage) {
+    if (!stage) return 'Stage 1: Review';
+    // Convert old values
+    if (stage === 'pending') return 'Stage 1: Review';
+    if (stage === 'interview') return 'Stage 2: Interview';
+    if (stage === 'done') return 'Rejection';
+    // Normalize Stage 1 variations
+    if (stage === 'Stage 1' || stage.toLowerCase() === 'stage 1') return 'Stage 1: Review';
+    // Normalize Stage 2 variations
+    if (stage === 'Stage 2' || stage.toLowerCase() === 'stage 2') return 'Stage 2: Interview';
+    return stage;
+}
+
 function loadStatuses() {
     const saved = localStorage.getItem('zfellows-statuses');
     if (saved) {
         const savedStatuses = JSON.parse(saved);
-        // Merge saved statuses with defaults for new candidates
-        candidateStatuses = candidates.reduce((acc, c) => ({
-            ...acc, 
-            [c.id]: savedStatuses[c.id] || 'pending'
-        }), {});
+        // Merge saved statuses with Airtable stage values, normalizing all values
+        candidateStatuses = candidates.reduce((acc, c) => {
+            let status = normalizeStage(savedStatuses[c.id] || c.stage);
+            return { ...acc, [c.id]: status };
+        }, {});
+        // Save the migrated statuses
+        saveStatuses();
     } else {
-        candidateStatuses = candidates.reduce((acc, c) => ({...acc, [c.id]: 'pending'}), {});
+        // Use Airtable stage values as defaults
+        candidateStatuses = candidates.reduce((acc, c) => ({...acc, [c.id]: normalizeStage(c.stage)}), {});
     }
 }
 
@@ -157,7 +173,19 @@ function saveHistory() {
 }
 
 function getStatus(candidateId) {
-    return candidateStatuses[candidateId] || 'pending';
+    return normalizeStage(candidateStatuses[candidateId]);
+}
+
+function getStageClass(stage) {
+    if (!stage) return 'stage-none';
+    const stageLower = stage.toLowerCase();
+    if (stageLower.includes('reject')) return 'stage-rejected';
+    if (stageLower.includes('stage 4') || stageLower.includes('onboard')) return 'stage-accepted';
+    if (stageLower.includes('stage 3')) return 'stage-stage3';
+    if (stageLower.includes('interview') || stageLower.includes('stage 2')) return 'stage-interview';
+    if (stageLower.includes('waitlist')) return 'stage-waitlist';
+    if (stageLower.includes('stage 1')) return 'stage-review';
+    return 'stage-default';
 }
 
 function setStatus(candidateId, status, skipHistory = false) {
@@ -248,7 +276,8 @@ function renderCandidateList() {
     listElement.innerHTML = '';
     
     [...candidates].sort((a, b) => getAIScore(b.id) - getAIScore(a.id)).forEach(candidate => {
-        const status = getStatus(candidate.id);
+        const stage = getStatus(candidate.id);
+        const stageClass = getStageClass(stage);
         const score = getAIScore(candidate.id);
         const item = document.createElement('div');
         item.className = `candidate-item ${currentCandidateId === candidate.id ? 'active' : ''}`;
@@ -260,7 +289,7 @@ function renderCandidateList() {
             </div>
             <div class="candidate-item-footer">
                 <div class="candidate-item-project">${candidate.company}</div>
-                <div class="candidate-item-status ${status}">${status}</div>
+                <div class="candidate-item-status ${stageClass}">${stage}</div>
             </div>
         `;
         listElement.appendChild(item);
@@ -280,11 +309,20 @@ function renderCandidateList() {
 }
 
 function updateStats() {
-    const stats = { pending: 0, interview: 0, done: 0 };
-    Object.values(candidateStatuses).forEach(status => stats[status]++);
-    document.getElementById('pending-count').textContent = stats.pending;
-    document.getElementById('interview-count').textContent = stats.interview;
-    document.getElementById('done-count').textContent = stats.done;
+    const stats = { stage1: 0, stage2: 0, rejected: 0 };
+    Object.values(candidateStatuses).forEach(status => {
+        const stageLower = (status || '').toLowerCase();
+        if (stageLower.includes('stage 1') || stageLower.includes('review')) {
+            stats.stage1++;
+        } else if (stageLower.includes('stage 2') || stageLower.includes('interview')) {
+            stats.stage2++;
+        } else if (stageLower.includes('reject')) {
+            stats.rejected++;
+        }
+    });
+    document.getElementById('stage1-count').textContent = stats.stage1;
+    document.getElementById('stage2-count').textContent = stats.stage2;
+    document.getElementById('rejected-count').textContent = stats.rejected;
 }
 
 function selectCandidate(candidateId) {
@@ -309,10 +347,11 @@ function updateHeaderInfo(candidate) {
     `;
 }
 
-function updateStatusBadge(status) {
+function updateStatusBadge(stage) {
     const badge = document.getElementById('status-badge');
-    badge.className = `status-badge ${status}`;
-    badge.textContent = status;
+    const stageClass = getStageClass(stage);
+    badge.className = `status-badge ${stageClass}`;
+    badge.textContent = stage;
 }
 
 function renderCandidateDetails(c) {
@@ -374,7 +413,12 @@ function setupKeyboardShortcuts() {
         // Z for undo
         if (key === 'z' && !e.ctrlKey && !e.shiftKey) return undoLastMove();
         if (!currentCandidateId) return;
-        const actions = { i: 'interview', e: 'done', p: 'pending' };
+        // Stage shortcuts: I = Interview, E = Rejection, P = Stage 1: Review
+        const actions = { 
+            i: 'Stage 2: Interview', 
+            e: 'Rejection', 
+            p: 'Stage 1: Review' 
+        };
         if (actions[key]) {
             setStatus(currentCandidateId, actions[key]);
             moveToNextCandidate();
@@ -384,11 +428,16 @@ function setupKeyboardShortcuts() {
 
 function moveToNextCandidate() {
     const currentIndex = candidates.findIndex(c => c.id === currentCandidateId);
+    // Find next candidate in Stage 1: Review
+    const isStage1 = (id) => {
+        const status = getStatus(id).toLowerCase();
+        return status.includes('stage 1') || status.includes('review');
+    };
     for (let i = currentIndex + 1; i < candidates.length; i++) {
-        if (getStatus(candidates[i].id) === 'pending') return selectCandidate(candidates[i].id);
+        if (isStage1(candidates[i].id)) return selectCandidate(candidates[i].id);
     }
     for (let i = 0; i < currentIndex; i++) {
-        if (getStatus(candidates[i].id) === 'pending') return selectCandidate(candidates[i].id);
+        if (isStage1(candidates[i].id)) return selectCandidate(candidates[i].id);
     }
     if (currentIndex < candidates.length - 1) selectCandidate(candidates[currentIndex + 1].id);
 }

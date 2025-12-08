@@ -53,25 +53,29 @@ Return ONLY a number 0-100.`;
     return score;
 }
 
-async function scoreAllPendingCandidates(apiKey, onProgress = null) {
+async function scoreAllStage1Candidates(apiKey, onProgress = null) {
     const candidateList = typeof getCandidates === 'function' ? getCandidates() : (typeof candidates !== 'undefined' ? candidates : []);
-    const pending = candidateList.filter(c => getStatus(c.id) === 'pending' && !aiScores[c.id]);
-    if (!pending.length) return { success: true, message: 'No pending candidates', total: 0, successful: 0, failed: 0 };
+    const isStage1 = (id) => {
+        const status = (typeof getStatus === 'function' ? getStatus(id) : '').toLowerCase();
+        return status.includes('stage 1') || status.includes('review');
+    };
+    const toScore = candidateList.filter(c => isStage1(c.id) && !aiScores[c.id]);
+    if (!toScore.length) return { success: true, message: 'No Stage 1 candidates to score', total: 0, successful: 0, failed: 0 };
     
-    const results = { total: pending.length, successful: 0, failed: 0, errors: [] };
+    const results = { total: toScore.length, successful: 0, failed: 0, errors: [] };
     
-    for (let i = 0; i < pending.length; i++) {
+    for (let i = 0; i < toScore.length; i++) {
         try {
-            const score = await scoreCandidate(pending[i], apiKey);
-            aiScores[pending[i].id] = score;
+            const score = await scoreCandidate(toScore[i], apiKey);
+            aiScores[toScore[i].id] = score;
             results.successful++;
             saveAIScores();
             renderCandidateList();
-            if (onProgress) onProgress({ current: i + 1, total: pending.length, candidate: pending[i], score });
-            if (i < pending.length - 1) await new Promise(r => setTimeout(r, 200));
+            if (onProgress) onProgress({ current: i + 1, total: toScore.length, candidate: toScore[i], score });
+            if (i < toScore.length - 1) await new Promise(r => setTimeout(r, 200));
         } catch (error) {
             results.failed++;
-            results.errors.push({ candidateId: pending[i].id, name: `${pending[i].firstName} ${pending[i].lastName}`, error: error.message });
+            results.errors.push({ candidateId: toScore[i].id, name: `${toScore[i].firstName} ${toScore[i].lastName}`, error: error.message });
         }
     }
     return results;
@@ -85,7 +89,7 @@ async function runAIScoring() {
     console.log('Starting AI scoring:', model);
     
     try {
-        const results = await scoreAllPendingCandidates(apiKey, p => 
+        const results = await scoreAllStage1Candidates(apiKey, p => 
             console.log(`${p.current}/${p.total}: ${p.candidate.firstName} ${p.candidate.lastName} = ${p.score}`)
         );
         console.log('Complete:', results);
