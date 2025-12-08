@@ -42,6 +42,7 @@ const FIELD_MAPPINGS = {
     'Cory Interview: Storytelling?': 'coryStorytelling',
     'Cory notes': 'coryNotes',
     'School or Work': 'schoolOrWork',
+    'In school or working?': 'schoolOrWork',
     'What is the project that you are currently working on or would like to pursue? Why?': 'projectDescription',
     'What problem are you solving?': 'problemSolving',
     'What expertise do you have to execute on the work that you want to do?': 'expertise',
@@ -51,8 +52,11 @@ const FIELD_MAPPINGS = {
     'What drives you?': 'drives',
     'What non-traditional things were you doing growing up?': 'nonTraditional',
     'Tell us about a risk you\'ve taken or a challenge you\'ve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
+    'Tell us about a risk you\u2019ve taken or a challenge you\u2019ve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
+    'Tell us about a risk you\u02BCve taken or a challenge you\u02BCve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
     'Please list or describe any achievements and prizes.': 'achievements',
     'Website': 'website',
+    'Personal and/or Project Website and/or Links about you': 'personalLinks',
     'Video Link': 'videoLink',
     'Video': 'videoLink',
     'Pitch Video': 'pitchVideo',
@@ -61,6 +65,7 @@ const FIELD_MAPPINGS = {
     'Dream Cofounder': 'cofounder',
     'How did you hear about us?': 'howHeard',
     'How did you hear about Z Fellows?': 'howHeard',
+    'How did you hear about ZF?': 'howHeard',
     'What help do you need?': 'helpNeeded',
     'Help Needed': 'helpNeeded'
 };
@@ -285,6 +290,13 @@ function transformAirtableRecord(record) {
     // Also include any unmapped fields directly
     for (const [key, value] of Object.entries(fields)) {
         if (!Object.keys(FIELD_MAPPINGS).includes(key)) {
+            // Check for risk/challenge field with flexible matching (handles different apostrophe characters)
+            const keyLower = key.toLowerCase();
+            if (keyLower.includes('risk') && keyLower.includes('challenge') && !candidate.riskOrChallenge) {
+                candidate.riskOrChallenge = value;
+                continue;
+            }
+            
             const camelKey = key.replace(/[^a-zA-Z0-9]/g, ' ')
                 .split(' ')
                 .map((word, i) => i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -323,6 +335,7 @@ function transformAirtableRecord(record) {
     candidate.nonTraditional = candidate.nonTraditional || '';
     candidate.riskOrChallenge = candidate.riskOrChallenge || '';
     candidate.website = candidate.website || '';
+    candidate.personalLinks = candidate.personalLinks || '';
     candidate.achievements = candidate.achievements || '';
     candidate.videoLink = candidate.videoLink || '';
     candidate.pitchVideo = candidate.pitchVideo || '';
@@ -856,6 +869,8 @@ function updateHeaderInfo(candidate) {
         <div class="header-info-item"><span class="header-info-label">Location:</span><span class="header-info-value">${candidate.location}</span></div>
         <div class="header-info-item"><span class="header-info-label">Technical:</span><span class="header-info-value">${candidate.technical}</span></div>
         <div class="header-info-item"><span class="header-info-label">Previously Applied:</span><span class="header-info-value">${candidate.previouslyApplied}</span></div>
+        <div class="header-info-item"><span class="header-info-label">School/Work:</span><span class="header-info-value">${candidate.schoolOrWork}</span></div>
+        <div class="header-info-item"><span class="header-info-label">How heard about ZF:</span><span class="header-info-value">${candidate.howHeard}</span></div>
     `;
 }
 
@@ -887,6 +902,7 @@ function renderCandidateDetails(c) {
     };
     
     const sections = [
+        ['Personal / Project Links', formatLinks(c.personalLinks)],
         ['Company / Project', c.company],
         ['Decision', c.decision],
         ...(coryScores.length ? [['Cory Interview Scores', coryScores.join(' | ')]] : []),

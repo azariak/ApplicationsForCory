@@ -44,6 +44,7 @@ const FIELD_MAPPINGS = {
     
     // Application content fields
     'School or Work': 'schoolOrWork',
+    'In school or working?': 'schoolOrWork',
     'What is the project that you are currently working on or would like to pursue? Why?': 'projectDescription',
     'What problem are you solving?': 'problemSolving',
     'What expertise do you have to execute on the work that you want to do?': 'expertise',
@@ -53,10 +54,14 @@ const FIELD_MAPPINGS = {
     'What drives you?': 'drives',
     'What non-traditional things were you doing growing up?': 'nonTraditional',
     'Tell us about a risk you\'ve taken or a challenge you\'ve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
+    'Tell us about a risk you\u2019ve taken or a challenge you\u2019ve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
+    'Tell us about a risk you\u02BCve taken or a challenge you\u02BCve faced. Tell us whether you failed or succeeded, how you behaved, and how you think this reflects your character.': 'riskOrChallenge',
     'Please list or describe any achievements and prizes.': 'achievements',
     
     // Additional fields
+    'Personal and/or Project Website and/or Links about you': 'personalLinks',
     'Website': 'website',
+    'Personal and/or Project Website and/or Links about you': 'personalLinks',
     'Video Link': 'videoLink',
     'Video': 'videoLink',
     'Pitch Video': 'pitchVideo',
@@ -65,6 +70,7 @@ const FIELD_MAPPINGS = {
     'Dream Cofounder': 'cofounder',
     'How did you hear about us?': 'howHeard',
     'How did you hear about Z Fellows?': 'howHeard',
+    'How did you hear about ZF?': 'howHeard',
     'What help do you need?': 'helpNeeded',
     'Help Needed': 'helpNeeded'
 };
@@ -164,6 +170,13 @@ function transformRecord(record, index) {
     // Also include any unmapped fields directly
     for (const [key, value] of Object.entries(fields)) {
         if (!Object.keys(FIELD_MAPPINGS).includes(key)) {
+            // Check for risk/challenge field with flexible matching (handles different apostrophe characters)
+            const keyLower = key.toLowerCase();
+            if (keyLower.includes('risk') && keyLower.includes('challenge') && !candidate.riskOrChallenge) {
+                candidate.riskOrChallenge = value;
+                continue;
+            }
+            
             // Convert field name to camelCase for consistency
             const camelKey = key.replace(/[^a-zA-Z0-9]/g, ' ')
                 .split(' ')
@@ -203,6 +216,7 @@ function transformRecord(record, index) {
     candidate.nonTraditional = candidate.nonTraditional || '';
     candidate.riskOrChallenge = candidate.riskOrChallenge || '';
     candidate.website = candidate.website || '';
+    candidate.personalLinks = candidate.personalLinks || '';
     candidate.achievements = candidate.achievements || '';
     candidate.videoLink = candidate.videoLink || '';
     candidate.pitchVideo = candidate.pitchVideo || '';
