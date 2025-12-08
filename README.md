@@ -10,6 +10,7 @@ A streamlined dashboard for Cory Levy to review Z Fellows applications with Airt
 - Add delay timer
 - Stage 1 and stage 1 review should be the same
 - Host on CloudFlare with login?
+- Shortcut to expand, preview on hover
 
 ## Setup
 

@@ -889,13 +889,14 @@ function renderCandidateDetails(c) {
     if (c.corySmart) coryScores.push(`Smart: ${c.corySmart}`);
     if (c.coryStorytelling) coryScores.push(`Storytelling: ${c.coryStorytelling}`);
     
-    // Helper to format links
+    // Helper to format links with expand button
     const formatLinks = (text) => {
         if (!text) return '';
         return text.split(',').map(link => {
             const trimmed = link.trim();
             if (trimmed.startsWith('http')) {
-                return `<a href="${trimmed}" target="_blank">${trimmed}</a>`;
+                const escapedUrl = trimmed.replace(/'/g, "\\'");
+                return `<span class="link-with-expand"><a href="${trimmed}" target="_blank">${trimmed}</a><button class="expand-btn" onclick="openIframePreview('${escapedUrl}')">Expand</button></span>`;
             }
             return trimmed;
         }).join('<br>');
@@ -919,8 +920,8 @@ function renderCandidateDetails(c) {
         ['Risk or Challenge', c.riskOrChallenge],
         ['Website / Links', formatLinks(c.website)],
         ['Achievements', c.achievements],
-        ['Video Introduction', c.videoLink ? `<a href="${c.videoLink}" target="_blank">${c.videoLink}</a>` : ''],
-        ['Pitch Video', c.pitchVideo ? `<a href="${c.pitchVideo}" target="_blank">${c.pitchVideo}</a>` : ''],
+        ['Video Introduction', formatLinks(c.videoLink)],
+        ['Pitch Video', formatLinks(c.pitchVideo)],
         ['Dream Co-founder', c.cofounder],
         ['How They Heard About Z Fellows', c.howHeard],
         ['Help Needed', c.helpNeeded],
@@ -1049,6 +1050,51 @@ function setupResizeHandle() {
             localStorage.setItem('zfellows-sidebar-width', currentWidth.toString());
         }
     });
+}
+
+// Iframe preview functions
+function openIframePreview(url) {
+    // Remove existing preview if any
+    closeIframePreview();
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'iframe-preview-overlay';
+    overlay.className = 'iframe-preview-overlay';
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeIframePreview();
+    };
+    
+    overlay.innerHTML = `
+        <div class="iframe-preview-container">
+            <div class="iframe-preview-header">
+                <span class="iframe-preview-url">${url}</span>
+                <div class="iframe-preview-actions">
+                    <a href="${url}" target="_blank" class="iframe-open-btn">Open in New Tab</a>
+                    <button class="iframe-close-btn" onclick="closeIframePreview()">✕</button>
+                </div>
+            </div>
+            <iframe src="${url}" class="iframe-preview-frame"></iframe>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Close on Escape key
+    document.addEventListener('keydown', handleIframeEscape);
+}
+
+function closeIframePreview() {
+    const overlay = document.getElementById('iframe-preview-overlay');
+    if (overlay) {
+        overlay.remove();
+        document.removeEventListener('keydown', handleIframeEscape);
+    }
+}
+
+function handleIframeEscape(e) {
+    if (e.key === 'Escape') {
+        closeIframePreview();
+    }
 }
 
 // Expose candidates globally for aiScoring.js
