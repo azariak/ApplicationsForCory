@@ -13,6 +13,8 @@ A streamlined dashboard for Cory Levy to review Z Fellows applications with Airt
 - Shortcut to expand link with better regex, preview link on hover
 - Add feedback directly
 - Consider change direction to match airtable, always go towards recent
+- Click space to open popup
+- Split screen with links auto-open
 
 ## Setup
 
