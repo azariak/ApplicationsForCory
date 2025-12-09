@@ -6,11 +6,11 @@ A streamlined dashboard for Cory Levy to review Z Fellows applications with Airt
 ## TODO
 - Youtube embed
 - AI Score
-- Ensure all fields there (ex: other names)
+- Ensure all fields appear (include: other names, fields only filled in some applications)
 - Add delay timer after action
 - Stage 1 and stage 1 review should be the same
-- Host on CloudFlare with login?
-- Shortcut to expand, preview on hover
+- Host on CloudFlare with login instead of settings popup?
+- Shortcut to expand link with better regex, preview link on hover
 - Add feedback directly
 - Consider change direction to match airtable, always go towards recent
 
