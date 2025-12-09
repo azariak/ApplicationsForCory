@@ -4,6 +4,7 @@ let statusHistory = [];
 let redoHistory = [];
 let zoomLevel = 0;
 let candidates = []; // Will be populated from API
+let flaggedCandidates = new Set(); // Flagged candidates
 let nextOffset = null; // For pagination
 let hasMoreCandidates = false;
 let isLoadingMore = false;
@@ -490,6 +491,7 @@ async function loadCandidatesFromAPI(offset = null) {
     // Now initialize the rest of the app
     loadStatuses();
     loadHistory();
+    loadFlags();
     loadAIScores();
     renderCandidateList();
     updateStats();
@@ -565,6 +567,22 @@ function loadHistory() {
 
 function saveHistory() {
     localStorage.setItem('zfellows-history', JSON.stringify(statusHistory));
+}
+
+function loadFlags() {
+    const saved = localStorage.getItem('zfellows-flags');
+    if (saved) flaggedCandidates = new Set(JSON.parse(saved));
+}
+
+function toggleFlag(candidateId, e) {
+    e.stopPropagation();
+    if (flaggedCandidates.has(candidateId)) {
+        flaggedCandidates.delete(candidateId);
+    } else {
+        flaggedCandidates.add(candidateId);
+    }
+    localStorage.setItem('zfellows-flags', JSON.stringify([...flaggedCandidates]));
+    renderCandidateList();
 }
 
 function getStatus(candidateId) {
@@ -805,12 +823,15 @@ function renderCandidateList() {
     sortedCandidates.forEach(candidate => {
         const stage = getStatus(candidate.id);
         const stageClass = getStageClass(stage);
+        const isActive = currentCandidateId === candidate.id;
+        const isFlagged = flaggedCandidates.has(candidate.id);
         const item = document.createElement('div');
-        item.className = `candidate-item ${currentCandidateId === candidate.id ? 'active' : ''}`;
+        item.className = `candidate-item ${isActive ? 'active' : ''}`;
         item.onclick = () => selectCandidate(candidate.id);
         item.innerHTML = `
             <div class="candidate-item-header">
                 <div class="candidate-item-name">${candidate.firstName} ${candidate.lastName}</div>
+                <span class="flag-btn ${isFlagged ? 'flagged' : ''}" style="display:${isActive || isFlagged ? 'inline' : 'none'}" onclick="toggleFlag('${candidate.id}', event)">⚑</span>
             </div>
             <div class="candidate-item-footer">
                 <div class="candidate-item-project">${candidate.company}</div>

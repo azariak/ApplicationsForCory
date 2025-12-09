@@ -228,6 +228,16 @@ body {
     margin-bottom: 6px;
 }
 
+.flag-btn {
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    transition: color 0.15s;
+}
+
+.flag-btn:hover { color: var(--text-secondary); }
+.flag-btn.flagged { color: #e53935; }
+
 .candidate-item-name {
     font-weight: 600;
     font-size: 15px;

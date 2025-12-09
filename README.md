@@ -6,8 +6,8 @@ A streamlined dashboard for Cory Levy to review Z Fellows applications with Airt
 ## TODO
 - Youtube embed
 - AI Score
-- All fields there
-- Add delay timer
+- Ensure all fields there (ex: other names)
+- Add delay timer after action
 - Stage 1 and stage 1 review should be the same
 - Host on CloudFlare with login?
 - Shortcut to expand, preview on hover
