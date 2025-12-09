@@ -952,7 +952,6 @@ function renderCandidateDetails(c) {
         ['Company / Project', c.company],
         ['Decision', c.decision],
         ...(coryScores.length ? [['Cory Interview Scores', coryScores.join(' | ')]] : []),
-        ['Cory Notes', c.coryNotes],
         ['School or Work', c.schoolOrWork],
         ['Project Description', c.projectDescription],
         ['Problem Solving', c.problemSolving],
@@ -982,6 +981,11 @@ function renderCandidateDetails(c) {
     const filteredSections = sections.filter(([title, content]) => content && String(content).trim());
     
     document.getElementById('candidate-details').innerHTML = `
+        <div class="feedback-section">
+            <label for="cory-notes-input">Feedback</label>
+            <textarea id="cory-notes-input" placeholder="Add notes...">${c.coryNotes || ''}</textarea>
+            <span class="save-status" id="save-status"></span>
+        </div>
         <div class="details-grid">
             ${filteredSections.map(([title, content]) => `
                 <div class="detail-section">
@@ -991,6 +995,40 @@ function renderCandidateDetails(c) {
             `).join('')}
         </div>
     `;
+    
+    // Setup auto-save for notes
+    const notesInput = document.getElementById('cory-notes-input');
+    let saveTimeout;
+    notesInput.addEventListener('input', () => {
+        clearTimeout(saveTimeout);
+        document.getElementById('save-status').textContent = '';
+        saveTimeout = setTimeout(() => saveCoryNotes(c.id, notesInput.value), 800);
+    });
+}
+
+async function saveCoryNotes(candidateId, notes) {
+    const statusEl = document.getElementById('save-status');
+    statusEl.textContent = 'Saving...';
+    statusEl.className = 'save-status';
+    
+    try {
+        if (hasValidSettings()) {
+            await updateAirtableDirect(candidateId, { 'Cory notes': notes });
+        } else {
+            await updateAirtableViaServer(candidateId, { 'Cory notes': notes });
+        }
+        // Update local candidate data
+        const candidate = candidates.find(c => c.id === candidateId);
+        if (candidate) candidate.coryNotes = notes;
+        
+        statusEl.textContent = 'Saved';
+        statusEl.className = 'save-status saved';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+    } catch (err) {
+        console.error('Failed to save notes:', err);
+        statusEl.textContent = 'Failed to save';
+        statusEl.className = 'save-status error';
+    }
 }
 
 function setupKeyboardShortcuts() {
@@ -1007,6 +1045,13 @@ function setupKeyboardShortcuts() {
         // J for next app, K for previous app
         if (key === 'j') return navigateToAdjacentCandidate(1);
         if (key === 'k') return navigateToAdjacentCandidate(-1);
+        // F to focus feedback field
+        if (key === 'f') {
+            e.preventDefault();
+            const notesInput = document.getElementById('cory-notes-input');
+            if (notesInput) notesInput.focus();
+            return;
+        }
         if (!currentCandidateId) return;
         // Stage shortcuts: I = Interview, E = Rejection, P = Stage 1: Review
         const actions = { 
