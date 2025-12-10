@@ -929,19 +929,22 @@ function renderCandidateDetails(c) {
     // Helper to format links with expand button - uses regex to find all URLs
     const formatLinks = (text) => {
         if (!text) return '';
-        // Regex to match URLs
-        const urlRegex = /(https?:\/\/[^\s,<>]+)/g;
+        // Regex to match URLs - handles http(s)://, www., and bare domains
+        // Matches: https://example.com, http://x.com, www.site.com, example.com, app.io/path
+        const urlRegex = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z]{2,})+(?:\/[^\s,<>)]*)?/gi;
         // Sites that block iframes
         const noExpandSites = ['linkedin', 'github'];
         // Replace all URLs with clickable links + expand button (if allowed)
         const formatted = text.replace(urlRegex, (url) => {
+            // Ensure URL has protocol for href
+            const href = url.match(/^https?:\/\//i) ? url : `https://${url}`;
             const urlLower = url.toLowerCase();
             const skipExpand = noExpandSites.some(site => urlLower.includes(site));
             if (skipExpand) {
-                return `<a href="${url}" target="_blank">${url}</a>`;
+                return `<a href="${href}" target="_blank">${url}</a>`;
             }
-            const escapedUrl = url.replace(/'/g, "\\'");
-            return `<a href="${url}" target="_blank">${url}</a><button class="expand-btn" onclick="openIframePreview('${escapedUrl}')">Expand</button>`;
+            const escapedUrl = href.replace(/'/g, "\\'");
+            return `<a href="${href}" target="_blank">${url}</a><button class="expand-btn" data-url="${escapedUrl}" onclick="openIframePreview('${escapedUrl}')" onmouseenter="showMiniPreview(this)" onmouseleave="hideMiniPreview()">Expand</button>`;
         });
         // Convert newlines to <br> for display
         return formatted.replace(/\n/g, '<br>');
@@ -1222,6 +1225,29 @@ function handleIframeEscape(e) {
     if (e.key === 'Escape') {
         closeIframePreview();
     }
+}
+
+// Mini preview on hover
+let miniPreviewTimeout;
+function showMiniPreview(btn) {
+    clearTimeout(miniPreviewTimeout);
+    hideMiniPreview(true);
+    const url = btn.dataset.url;
+    const rect = btn.getBoundingClientRect();
+    const preview = document.createElement('div');
+    preview.id = 'mini-preview';
+    preview.innerHTML = `<iframe src="${url}"></iframe>`;
+    preview.style.cssText = `position:fixed;top:${rect.bottom+5}px;left:${rect.left}px;width:400px;height:300px;z-index:9999;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3);overflow:hidden;`;
+    preview.querySelector('iframe').style.cssText = 'width:100%;height:100%;border:none;';
+    preview.onmouseenter = () => clearTimeout(miniPreviewTimeout);
+    preview.onmouseleave = () => hideMiniPreview();
+    document.body.appendChild(preview);
+}
+
+function hideMiniPreview(immediate) {
+    clearTimeout(miniPreviewTimeout);
+    if (immediate) return document.getElementById('mini-preview')?.remove();
+    miniPreviewTimeout = setTimeout(() => document.getElementById('mini-preview')?.remove(), 100);
 }
 
 // Expose candidates globally for aiScoring.js
