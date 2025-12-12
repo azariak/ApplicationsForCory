@@ -538,7 +538,7 @@ function normalizeStage(stage) {
     if (stage === 'interview') return 'Stage 2: Interview';
     if (stage === 'done') return 'Rejection';
     // Normalize Stage 1 variations
-    if (stage === 'Stage 1' || stage.toLowerCase() === 'stage 1') return 'Stage 1: Review';
+    if (stage === 'Stage 1' || stage.toLowerCase() === 'stage 1' || stage === 'Stage 1: Application Review') return 'Stage 1: Review';
     // Normalize Stage 2 variations
     if (stage === 'Stage 2' || stage.toLowerCase() === 'stage 2') return 'Stage 2: Interview';
     return stage;
