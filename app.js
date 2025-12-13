@@ -1102,7 +1102,7 @@ function renderCandidateDetails(c) {
         // Matches: https://example.com, http://x.com, www.site.com, example.com, app.io/path
         const urlRegex = /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z]{2,})+(?:\/[^\s,<>)]*)?/gi;
         // Sites that block iframes
-        const noExpandSites = ['linkedin', 'github'];
+        const noExpandSites = ['linkedin', 'github', 'youtube', 'youtu.be'];
         // Replace all URLs with clickable links + expand button (if allowed)
         const formatted = text.replace(urlRegex, (url) => {
             // Ensure URL has protocol for href
