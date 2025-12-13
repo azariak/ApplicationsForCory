@@ -1137,7 +1137,7 @@ function renderCandidateDetails(c) {
         ['Website / Links', formatLinks(c.website)],
         ['Achievements', c.achievements],
         ['Video Introduction', c.videoLink ? `<a href="${c.videoLink}" target="_blank">${c.videoLink}</a>` : ''],
-        ['Pitch Video', c.pitchVideo ? `<a href="${c.pitchVideo}" target="_blank">${c.pitchVideo}</a>` : ''],
+        ['Pitch Video', c.pitchVideo ? getYouTubeEmbedHtml(c.pitchVideo) : ''],
         ['Dream Co-founder', c.cofounder],
         ['How They Heard About Z Fellows', c.howHeard],
         ['Help Needed', c.helpNeeded],
@@ -1371,6 +1371,24 @@ function setupResizeHandle() {
             localStorage.setItem('zfellows-sidebar-width', currentWidth.toString());
         }
     });
+}
+
+// YouTube embed helper
+function getYouTubeEmbedHtml(url) {
+    if (!url) return '';
+    // Match various YouTube URL formats
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/
+    ];
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) {
+            return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${match[1]}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:8px;margin-top:8px;"></iframe>`;
+        }
+    }
+    // Not a YouTube link, return regular link
+    return `<a href="${url}" target="_blank">${url}</a>`;
 }
 
 // Iframe preview functions
