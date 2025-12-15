@@ -1582,7 +1582,16 @@ function getYouTubeEmbedHtml(url) {
     for (const pattern of patterns) {
         const match = url.match(pattern);
         if (match) {
-            return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${match[1]}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:8px;margin-top:8px;"></iframe>`;
+            const videoId = match[1];
+            const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            // Using youtube-nocookie.com and removing specific referrer policies often fixes local/black screen issues
+            return `
+                <div class="video-embed-container">
+                    <iframe width="100%" height="315" src="https://www.youtube-nocookie.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius:8px;margin-top:8px;"></iframe>
+                    <div style="margin-top: 8px; font-size: 0.9em;">
+                        <a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${cleanUrl}</a>
+                    </div>
+                </div>`;
         }
     }
     // Not a YouTube link, return regular link
