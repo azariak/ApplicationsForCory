@@ -1079,21 +1079,8 @@ function selectCandidate(candidateId) {
     document.getElementById('candidate-name').textContent = `${candidate.firstName} ${candidate.lastName}${ageString}`;
     
     updateStatusBadge(getStatus(candidateId));
-    updateHeaderInfo(candidate);
     renderCandidateDetails(candidate);
     renderCandidateList();
-}
-
-function updateHeaderInfo(candidate) {
-    document.getElementById('header-info').innerHTML = `
-        <div class="header-info-item"><span class="header-info-label">Email:</span><span class="header-info-value">${candidate.email}</span></div>
-        <div class="header-info-item"><span class="header-info-label">Phone:</span><span class="header-info-value">${candidate.phone}</span></div>
-        <div class="header-info-item"><span class="header-info-label">Location:</span><span class="header-info-value">${candidate.location}</span></div>
-        <div class="header-info-item"><span class="header-info-label">Technical:</span><span class="header-info-value">${candidate.technical}</span></div>
-        <div class="header-info-item"><span class="header-info-label">Previously Applied:</span><span class="header-info-value">${candidate.previouslyApplied}</span></div>
-        <div class="header-info-item"><span class="header-info-label">School/Work:</span><span class="header-info-value">${candidate.schoolOrWork}</span></div>
-        <div class="header-info-item"><span class="header-info-label">How heard about ZF:</span><span class="header-info-value">${candidate.howHeard}</span></div>
-    `;
 }
 
 function updateStatusBadge(stage) {
@@ -1163,12 +1150,22 @@ function renderCandidateDetails(c) {
         ['Stage 4 Onboarding Doc', c.stage4Onboarding],
         ['Upcoming Cohort Date', c.upcomingCohortDate],
         ['Waitlist Update', c.waitlistUpdate],
+        // Contact info at bottom
+        ['Email', c.email],
+        ['Phone', c.phone],
     ];
     
     // Filter out empty sections
     const filteredSections = sections.filter(([title, content]) => content && String(content).trim());
     
     document.getElementById('candidate-details').innerHTML = `
+        <div class="header-info">
+            <div class="header-info-item"><span class="header-info-label">Location:</span><span class="header-info-value">${c.location}</span></div>
+            <div class="header-info-item"><span class="header-info-label">Technical:</span><span class="header-info-value">${c.technical}</span></div>
+            <div class="header-info-item"><span class="header-info-label">Previously Applied:</span><span class="header-info-value">${c.previouslyApplied}</span></div>
+            <div class="header-info-item"><span class="header-info-label">School/Work:</span><span class="header-info-value">${c.schoolOrWork}</span></div>
+            <div class="header-info-item"><span class="header-info-label">How heard about ZF:</span><span class="header-info-value">${c.howHeard}</span></div>
+        </div>
         <div class="feedback-section">
             <label for="cory-notes-input">Feedback</label>
             <textarea id="cory-notes-input" placeholder="Add notes...">${c.coryNotes || ''}</textarea>
