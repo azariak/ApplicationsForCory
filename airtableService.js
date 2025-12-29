@@ -75,7 +75,8 @@ const FIELD_MAPPINGS = {
     'Help Needed': 'helpNeeded',
     
     // Internal flags
-    'Flag': 'flag'
+    'Flag': 'flag',
+    'AI Score': 'aiScore'
 };
 
 /**
@@ -227,8 +228,8 @@ function transformRecord(record, index) {
     candidate.howHeard = candidate.howHeard || '';
     candidate.helpNeeded = candidate.helpNeeded || '';
     
-    // Default AI score (can be overwritten by AI scoring feature)
-    candidate.aiScore = candidate.aiScore || 50;
+    // AI Score (no default, strictly from Airtable)
+    // candidate.aiScore is automatically set if mapped or auto-converted
 
     return candidate;
 }

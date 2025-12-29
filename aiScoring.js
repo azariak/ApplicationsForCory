@@ -14,7 +14,7 @@ function getAIScore(candidateId) {
     // Get candidates from the global getCandidates function or use default
     const candidateList = typeof getCandidates === 'function' ? getCandidates() : (typeof candidates !== 'undefined' ? candidates : []);
     const candidate = candidateList.find(c => c.id === candidateId);
-    return candidate ? (candidate.aiScore || 50) : 50;
+    return candidate ? (candidate.aiScore || null) : null;
 }
 
 async function scoreCandidate(candidate, apiKey, model = 'gpt-4o-mini') {

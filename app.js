@@ -479,7 +479,7 @@ function transformAirtableRecord(record) {
     candidate.cofounder = candidate.cofounder || '';
     candidate.howHeard = candidate.howHeard || '';
     candidate.helpNeeded = candidate.helpNeeded || '';
-    candidate.aiScore = candidate.aiScore || 50;
+    // candidate.aiScore = candidate.aiScore || 50; // Removed default to prevent showing 50 for blank fields
 
     return candidate;
 }
@@ -1175,6 +1175,9 @@ function renderCandidateList() {
         const item = document.createElement('div');
         item.className = `candidate-item ${isActive ? 'active' : ''}`;
         item.onclick = () => selectCandidate(candidate.id);
+        const aiScore = candidate.aiScore;
+        const aiIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`;
+        const aiScoreHtml = (aiScore != null && String(aiScore).length < 3) ? `<div class="ai-score-badge" style="margin-bottom:2px; display:flex; align-items:center; justify-content:flex-end; gap:3px;">${aiIcon}:${aiScore}</div>` : '';
         item.innerHTML = `
             <div class="candidate-item-header">
                 <div class="candidate-item-name">${candidate.firstName} ${candidate.lastName}${timerHtml}</div>
@@ -1182,7 +1185,10 @@ function renderCandidateList() {
             </div>
             <div class="candidate-item-footer">
                 <div class="candidate-item-project">${candidate.company}</div>
-                <div class="candidate-item-status ${stageClass}">${stage}</div>
+                <div style="display:flex; flex-direction:column; align-items:flex-end">
+                    ${aiScoreHtml}
+                    <div class="candidate-item-status ${stageClass}">${stage}</div>
+                </div>
             </div>
         `;
         listElement.appendChild(item);
@@ -1224,6 +1230,9 @@ function renderCandidateList() {
                 const item = document.createElement('div');
                 item.className = `candidate-item hidden-candidate ${isActive ? 'active' : ''}`;
                 item.onclick = () => selectCandidate(candidate.id);
+                const aiScore = candidate.aiScore;
+                const aiIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`;
+                const aiScoreHtml = (aiScore != null && String(aiScore).length < 3) ? `<div class="ai-score-badge" style="margin-bottom:2px; display:flex; align-items:center; justify-content:flex-end; gap:3px;">${aiIcon}:${aiScore}</div>` : '';
                 item.innerHTML = `
                     <div class="candidate-item-header">
                         <div class="candidate-item-name">${candidate.firstName} ${candidate.lastName}</div>
@@ -1231,7 +1240,10 @@ function renderCandidateList() {
                     </div>
                     <div class="candidate-item-footer">
                         <div class="candidate-item-project">${candidate.company}</div>
-                        <div class="candidate-item-status ${stageClass}">${stage}</div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end">
+                            ${aiScoreHtml}
+                            <div class="candidate-item-status ${stageClass}">${stage}</div>
+                        </div>
                     </div>
                 `;
                 hiddenSection.appendChild(item);
