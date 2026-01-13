@@ -694,24 +694,45 @@ function normalizeStage(stage) {
 }
 
 function loadStatuses() {
+    // Migration: Clear old cached statuses so Airtable becomes source of truth
+    // This runs once, then the flag prevents it from running again
+    if (!localStorage.getItem('zfellows-statuses-migrated-v2')) {
+        localStorage.removeItem('zfellows-statuses');
+        localStorage.setItem('zfellows-statuses-migrated-v2', 'true');
+        console.log('✓ Migrated to Airtable as source of truth for statuses');
+    }
+    
     const saved = localStorage.getItem('zfellows-statuses');
     if (saved) {
         const savedStatuses = JSON.parse(saved);
-        // Merge saved statuses with Airtable stage values, normalizing all values
+        // Start with Airtable as source of truth, only use localStorage for pending changes
         candidateStatuses = candidates.reduce((acc, c) => {
+            // Use localStorage value only if it exists (indicates pending sync)
+            // Otherwise use Airtable stage
             let status = normalizeStage(savedStatuses[c.id] || c.stage);
             return { ...acc, [c.id]: status };
         }, {});
-        // Save the migrated statuses
-        saveStatuses();
     } else {
         // Use Airtable stage values as defaults
         candidateStatuses = candidates.reduce((acc, c) => ({...acc, [c.id]: normalizeStage(c.stage)}), {});
     }
 }
 
-function saveStatuses() {
-    localStorage.setItem('zfellows-statuses', JSON.stringify(candidateStatuses));
+function savePendingStatus(candidateId) {
+    // Only save this specific candidate's pending status, not all candidates
+    const saved = localStorage.getItem('zfellows-statuses');
+    const statuses = saved ? JSON.parse(saved) : {};
+    statuses[candidateId] = candidateStatuses[candidateId];
+    localStorage.setItem('zfellows-statuses', JSON.stringify(statuses));
+}
+
+function removeSavedStatus(candidateId) {
+    const saved = localStorage.getItem('zfellows-statuses');
+    if (saved) {
+        const statuses = JSON.parse(saved);
+        delete statuses[candidateId];
+        localStorage.setItem('zfellows-statuses', JSON.stringify(statuses));
+    }
 }
 
 function loadHistory() {
@@ -788,7 +809,7 @@ function hideCandidate(candidateId, skipHistory = false) {
     candidateStatuses[candidateId] = newStatus;
     hiddenCandidates.add(candidateId);
     
-    saveStatuses();
+    savePendingStatus(candidateId);
     saveHiddenCandidates();
     renderCandidateList();
     updateStats();
@@ -916,7 +937,7 @@ function setStatus(candidateId, status, skipHistory = false) {
         redoHistory = [];
     }
     candidateStatuses[candidateId] = status;
-    saveStatuses();
+    savePendingStatus(candidateId);
     
     // If status is changing away from Rejection, unhide the candidate
     if (hiddenCandidates.has(candidateId) && !status.toLowerCase().includes('reject')) {
@@ -942,9 +963,14 @@ function setStatus(candidateId, status, skipHistory = false) {
         clearInterval(intervalId);
         delete pendingTimers[candidateId];
         renderCandidateList();
-        updateAirtableStage(candidateId, status).catch(err => {
-            console.error('Failed to sync to Airtable:', err.message);
-        });
+        updateAirtableStage(candidateId, status)
+            .then(() => {
+                // After successful sync, remove from localStorage so Airtable is source of truth
+                removeSavedStatus(candidateId);
+            })
+            .catch(err => {
+                console.error('Failed to sync to Airtable:', err.message);
+            });
     }, 5000);
     pendingTimers[candidateId] = { timerId, intervalId, endTime, status };
 }
@@ -1026,18 +1052,24 @@ function undoLastMove() {
     // Push to redo stack
     redoHistory.push(lastAction);
     candidateStatuses[lastAction.candidateId] = lastAction.oldStatus;
-    saveStatuses();
     
     // Cancel pending Airtable sync if exists, otherwise sync the undo
     if (pendingTimers[lastAction.candidateId]) {
         clearTimeout(pendingTimers[lastAction.candidateId].timerId);
         clearInterval(pendingTimers[lastAction.candidateId].intervalId);
         delete pendingTimers[lastAction.candidateId];
+        // Remove from localStorage since we cancelled the sync
+        removeSavedStatus(lastAction.candidateId);
     } else {
         // Timer already fired, sync the restored status to Airtable
-        updateAirtableStage(lastAction.candidateId, lastAction.oldStatus).catch(err => {
-            console.error('Failed to sync undo to Airtable:', err.message);
-        });
+        savePendingStatus(lastAction.candidateId);
+        updateAirtableStage(lastAction.candidateId, lastAction.oldStatus)
+            .then(() => {
+                removeSavedStatus(lastAction.candidateId);
+            })
+            .catch(err => {
+                console.error('Failed to sync undo to Airtable:', err.message);
+            });
     }
     
     // If this action hid the candidate, unhide it
@@ -1057,13 +1089,22 @@ function redoLastMove() {
     statusHistory.push(lastRedo);
     saveHistory();
     candidateStatuses[lastRedo.candidateId] = lastRedo.newStatus;
-    saveStatuses();
+    savePendingStatus(lastRedo.candidateId);
     
     // If this action originally hid the candidate, re-hide it
     if (lastRedo.wasHidden) {
         hiddenCandidates.add(lastRedo.candidateId);
         saveHiddenCandidates();
     }
+    
+    // Sync the redo to Airtable and clean up localStorage
+    updateAirtableStage(lastRedo.candidateId, lastRedo.newStatus)
+        .then(() => {
+            removeSavedStatus(lastRedo.candidateId);
+        })
+        .catch(err => {
+            console.error('Failed to sync redo to Airtable:', err.message);
+        });
     
     selectCandidate(lastRedo.candidateId);
     renderCandidateList();
